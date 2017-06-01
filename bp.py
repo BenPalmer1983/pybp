@@ -1,6 +1,11 @@
 #!/bin/python3
 ################################################################################
-
+#
+# Calculate Bulk Property
+#
+# Elastic constants: method from First principles calculations of elastic
+# properties of metals 1994  Mehl, Klien, Papaconstantopoulos
+#
 #
 import getopt
 import math
@@ -323,7 +328,7 @@ class bpCalc:
     if(self.mixing_mode=="TF"):
       self.pwIn.setMixingTF()
     if(self.mixing_mode=="local-TF"):
-      self.pwIn.setMixingLocalTF()    
+      self.pwIn.setMixingLocalTF()
     #structures.printStructure(self.expanded)
 
   def relaxed(self):       # Use vc-relax to fine optimum settings
