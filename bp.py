@@ -6,6 +6,7 @@
 # Elastic constants: method from First principles calculations of elastic
 # properties of metals 1994  Mehl, Klien, Papaconstantopoulos
 #
+
 #
 import getopt
 import math
@@ -93,6 +94,7 @@ class bpCalc:
     self.testeps = 10
     self.outdir = ""
     self.ppdir = ""
+    self.pwtemplate = None
 
     self.atomList = []
     self.massList = []
@@ -116,6 +118,10 @@ class bpCalc:
 
       # PWscf Settings
       #######################
+      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$PWTEMPLATE", True)
+      if(keywordResult is not None):
+        fileRowArr = keywordResult.split(" ")
+        self.pwtemplate = fileRowArr[1]
       keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ATOMLIST", True)
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")
@@ -301,34 +307,45 @@ class bpCalc:
     self.makeStructure()
     self.relaxed()
     self.isolatedAtom()
-    self.unperturbed()
-    self.bulkModulus()
-    self.cubicElasticConstants()
-    self.outputResults()
+    #self.unperturbed()
+    #self.bulkModulus()
+    #self.cubicElasticConstants()
+    #self.outputResults()
 
   def makeStructure(self):       # Use vc-relax to fine optimum settings
     print ("1. Make atom structure")
-    self.primitive = structures.primitiveStructure(self.structure,self.atomList)
-    self.expanded = structures.buildStructure(self.primitive,self.copies)
     self.pwIn = pwIn()
-    self.pwIn.makeTemplate()
-    self.pwIn.changeAlat(self.copies * self.inputAlat, True)
-    self.pwIn.changeAtoms(self.expanded)
-    self.pwIn.changeAtomSpecies(self.atomList,self.massList,self.ppList)
+    if(self.pwtemplate is None):
+      # Make structure
+      print ("   build structure")
+      self.primitive = structures.primitiveStructure(self.structure,self.atomList)
+      self.expanded = structures.buildStructure(self.primitive,self.copies)
+      # Make template file
+      self.pwIn.makeTemplate()
+      self.pwIn.changeAlat(self.copies * self.inputAlat, True)
+      self.pwIn.changeAtoms(self.expanded)
+      self.pwIn.changeAtomSpecies(self.atomList,self.massList,self.ppList)
+      self.pwIn.changePrefix("template")
+      if(self.nspin==0):
+        self.pwIn.setMagnetic0()
+      if(self.nspin==2):
+        self.pwIn.setMagnetic2()
+      if(self.mixing_mode=="TF"):
+        self.pwIn.setMixingTF()
+      if(self.mixing_mode=="local-TF"):
+        self.pwIn.setMixingLocalTF()
+    else:
+      # Load all from a template file
+      print ("   load from file")
+      self.pwIn.loadFile(self.pwtemplate)
+    # Change values (regardless of template file or built)
     self.pwIn.changeEcutwfc(self.ecutwfc)
     self.pwIn.changeEcutrho(self.ecutrho)
     self.pwIn.changeKpoints(self.kpoints)
     self.pwIn.changeOutdir(self.outdir)
     self.pwIn.changePPdir(self.ppdir)
-    self.pwIn.changePrefix("template")
-    if(self.nspin==0):
-      self.pwIn.setMagnetic0()
-    if(self.nspin==2):
-      self.pwIn.setMagnetic2()
-    if(self.mixing_mode=="TF"):
-      self.pwIn.setMixingTF()
-    if(self.mixing_mode=="local-TF"):
-      self.pwIn.setMixingLocalTF()
+    self.pwIn.outputFile(self.tmpDir+"/template.in")
+
     #structures.printStructure(self.expanded)
 
   def relaxed(self):       # Use vc-relax to fine optimum settings

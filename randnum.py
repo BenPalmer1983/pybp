@@ -2,6 +2,8 @@
 ################################################################################
 
 import math
+import time
+import hashlib
 
 ############################################################
 # Random Number Generator
@@ -81,6 +83,15 @@ class RandDist:
     self.distType = "flat"
     # make a new distribution table
     self.table = RandDistTable()
+
+  def randomSeed(self):
+    currentTime = time.time()
+    myhash = hashlib.md5()
+    message = "randnum"+str(currentTime)
+    myhash.update(message.encode())
+    seed = myhash.hexdigest()
+    seedInt = int("0x"+seed[0:8],0)
+    self.xn = (self.xn + seedInt) % self.m
 
   def setRange(self,lower,upper):
     self.lower = lower
@@ -295,12 +306,16 @@ class RandDist:
   def makeTally(self, tallySize=50, sampleSize=100000):
     # Declare list
     self.tally = []
+    self.tallyX = []
     self.tallySize = tallySize
     sampleSize = 100000
     self.sampleSize = sampleSize
+    halfIncrement = (self.upper - self.lower) / (2 * tallySize)
     # Loop through
     for i in range(0,tallySize):
       self.tally.append(0)
+      xVal = self.lower + (2 * i + 1) * halfIncrement
+      self.tallyX.append(xVal)
     for i in range(0,self.sampleSize):
       randNum = self.rng()
       binNum = randNum - self.lower
@@ -318,9 +333,11 @@ class RandDist:
     print("     Tally: ",self.distType)
     print("==============================")
     for i in range(0,self.tallySize):
-      print(i,"  ",self.tally[i])
+      #print(i,"  ",self.tally[i],"  ",self.tallyX[i],"  ",self.tally[i])
+      print('{0:3G},{1:8G},{2:5f},{3:8G}'.format(i,self.tally[i],self.tallyX[i],self.tally[i]))
     print("==============================")
     print()
+
 
   @staticmethod
   def interp(x, points):
@@ -353,6 +370,18 @@ class RandDist:
 class Test_RandDist:
 
   @staticmethod
+  def testRandFloatSingle():
+    rd = RandDist()
+    print(rd.rng())
+    print(rd.rng())
+    print(rd.rng())
+    rd.randomSeed()
+    print(rd.rng())
+    print(rd.rng())
+    print(rd.rng())
+
+
+  @staticmethod
   def testRandFloat():
     rd = RandDist()
     rd.makeTally()
@@ -378,7 +407,6 @@ class Test_RandDist:
     rd.doubleGaussian(-1.0,1.0,1.0,0.0,1.0,4.0,1.5,0.8,1.0,4.0)
     rd.makeTally()
     rd.displayTally()
-
 
 
 

@@ -20,9 +20,7 @@ class runPw:
       try:
         procs = os.environ['procCount']
       except:
-        procs = 2
-
-
+        procs = 4
 
     cmdIn = "mpirun "
     cmdIn = cmdIn + "-np " + str(procs) + " "
@@ -34,8 +32,10 @@ class runPw:
       print (runCode, cmdIn)
 
     if(runCode==1):
+      # Run anyway
       os.system(cmdIn)
     if(runCode==2):
+      # Check if successful
       pwDat = pwOut(outFile)
       if(not pwDat.successful):
         os.system(cmdIn)

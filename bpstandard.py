@@ -3,6 +3,7 @@
 
 import sys
 import os
+import hashlib
 from randnum import RandomLCG as RandomLCG
 
 
@@ -37,6 +38,14 @@ class oFileData:
   def printFile(self):
     for i in range(0,self.lineCount):
       print(self.fileData[i])
+
+  def md5hash(self):
+    myhash = hashlib.md5()
+    message = ""
+    for fileLine in self.fileData:
+      message = message + fileLine
+    myhash.update(message.encode())
+    self.data_md5hash = myhash.hexdigest()
 
 ###########################
 # Strings

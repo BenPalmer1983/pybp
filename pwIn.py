@@ -6,6 +6,8 @@ from bpstandard import oFileData as oFileData
 from bpstandard import oStrings as oStrings
 from strains import strains as strains
 from structures import structures as structures
+from randnum import RandomLCG as RandomLCG
+from randnum import RandDist as RandDist
 
 
 ###########################
@@ -82,10 +84,40 @@ class pwIn:
     fileIn = self.filePath
     self.loadFile(self, fileIn)
 
+
+  def getNAT(self):
+    nAtoms = 0
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      testStrU = testStr.upper()
+      # Update data file
+      if ('NAT =' in testStrU or 'NAT=' in testStrU):
+        fileRowArr = testStr.split(",")
+        testStr = fileRowArr[0]
+        fileRowArr = testStr.split("=")
+        nAtoms = int(fileRowArr[1])
+    return nAtoms
+
+
+  def getAlat(self):
+    aLat = 0.0
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      testStrU = testStr.upper()
+      # Update data file
+      if ('CELLDM(1) =' in testStrU or 'CELLDM(1)=' in testStrU):
+        fileRowArr = testStr.split(",")
+        testStr = fileRowArr[0]
+        fileRowArr = testStr.split("=")
+        aLat = float(fileRowArr[1])
+    return aLat
+
+
   def changeCalculation(self, calculation):
     for i in range(0,self.pwFile.lineCount):
       if 'calculation' in self.pwFile.fileData[i]:
         self.pwFile.fileData[i] = 'calculation = "'+calculation+'",'
+
 
   def changeOutdir(self, dirIn):
     for i in range(0,self.pwFile.lineCount):
@@ -356,10 +388,12 @@ class pwIn:
   def fileName(self, fileNameIn):
     self.pwFile.fileName = fileNameIn
 
+
   def outputFile(self, fileNameIn = None):
     if(fileNameIn is not None):
       self.pwFile.fileName = fileNameIn
     self.pwFile.writeFile()
+
 
   def displayAlat(self):
     print ()
@@ -371,6 +405,7 @@ class pwIn:
         print(self.cellParameters[i][j])
       print ()
     print ()
+
 
   def displayFile(self):
     self.pwFile.printFile()
@@ -394,6 +429,7 @@ class pwIn:
       self.changeCellParameters(output)   # update file data
     return output
 
+
   def scale(self, sVal, inputUnitVec=None):
     transformVec = [[0 for x in range(3)] for y in range(3)]
     cpFlag = False
@@ -411,11 +447,48 @@ class pwIn:
       self.cellParameters = output        # update matrix
       self.changeCellParameters(output)   # update file data
 
+
   def resetCellParameters(self):
     iMatrix = strains.identityMatrix()
     self.cellParameters = iMatrix        # update matrix
     self.changeCellParameters(iMatrix)   # update file data
 
+
+  def heat(self, maxVariation):
+    # Set up random number
+    rd = RandDist()
+    rd.gheat(-1.0,1.0,1.0,0.0,1.0,4.0)
+    # Get atom numbers
+    nAtoms = self.getNAT()
+    # Get lattice parameter
+    aLat = self.getAlat()
+    # Crystal variation
+    variation = maxVariation * (1.0 / aLat)
+    # Loop through rows
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      testStrU = testStr.upper()
+      # Update data file
+      if ('ATOMIC_POSITIONS' in testStrU):
+        for k in range(0,nAtoms):
+          i = i + 1
+          if(self.pwFile.fileData[i] == ""):
+            k = k - 1
+          else:
+            fileRow = oStrings.removeDouble(self.pwFile.fileData[i]," ")
+            fileRow = fileRow.split(" ")
+            newRow = fileRow[0] + " "
+            x = float(fileRow[1])
+            x = x + variation * rd.rng()
+            x = x % 1
+            y = float(fileRow[2])
+            y = y + variation * rd.rng()
+            y = y % 1
+            z = float(fileRow[3])
+            z = z + variation * rd.rng()
+            z = z % 1
+            newRow = newRow + str(x) + " " + str(y) + " " + str(z)
+            self.pwFile.fileData[i] = newRow
 
   ###############################################
   # Specific templates
