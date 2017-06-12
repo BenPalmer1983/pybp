@@ -24,6 +24,7 @@ from bpstandard import oStrings as oStrings
 from bpstandard import general as general
 from structures import structures as structures
 from pwIn import pwIn as pwIn
+from prepPwIn import prepPwIn as prepPwIn
 from pwOut import pwOut as pwOut
 from pwOut import pwCompare as pwCompare
 from runPw import runPw as runPw
@@ -95,10 +96,32 @@ class bpCalc:
     self.outdir = ""
     self.ppdir = ""
     self.pwtemplate = None
+    self.cell_xx = 1.0
+    self.cell_xy = 0.0
+    self.cell_xz = 0.0
+    self.cell_yx = 0.0
+    self.cell_yy = 1.0
+    self.cell_yz = 0.0
+    self.cell_zx = 0.0
+    self.cell_zy = 0.0
+    self.cell_zz = 1.0
+    self.procCount = None
+    self.structure = None
+
+    self.ecutwfc = None
+    self.ecutrho = None
+    self.degauss = None
+    self.nosmear = False
+    self.kpoints = None
+
+    self.outdir = None
+    self.ppdir = None
 
     self.atomList = []
     self.massList = []
     self.ppList = []
+
+    self.atomsPerCell = None
 
     for i in range(0,self.cFile.lineCount):
       # Directories
@@ -107,64 +130,9 @@ class bpCalc:
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")
         self.tmpDir = fileRowArr[1]
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$OUTDIR", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.outdir = fileRowArr[1]
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$PPDIR", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.ppdir = fileRowArr[1]
-
-      # PWscf Settings
-      #######################
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$PWTEMPLATE", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.pwtemplate = fileRowArr[1]
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ATOMLIST", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        for i in range(1,len(fileRowArr)):
-          self.atomList.append(fileRowArr[i])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$MASSLIST", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        for i in range(1,len(fileRowArr)):
-          self.massList.append(fileRowArr[i])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$PPLIST", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        for i in range(1,len(fileRowArr)):
-          self.ppList.append(fileRowArr[i])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$STRUCTURE", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.structure = fileRowArr[1]
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ALAT", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.inputAlat = float(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$COPIES", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.copies = int(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$NSPIN", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.nspin = int(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$MIXING_MODE", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.mixing_mode = fileRowArr[1]
-
 
       # Run Settings
       #######################
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$PROCS", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.procCount = int(fileRowArr[1])
       keywordResult = self.checkKeyword(self.cFile.fileData[i], "$CONVERGE", True)
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")
@@ -173,51 +141,6 @@ class bpCalc:
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")
         self.runCode = int(fileRowArr[1])
-
-
-      # Convergence Settings
-      #######################
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ETHRESHOLD", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.eThreshold = float(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$FTHRESHOLD", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.fThreshold = float(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$STHRESHOLD", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.sThreshold = float(fileRowArr[1]) / 1.471050658e7
-      ####
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$MINECUTWFC", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.min_ecutwfc = int(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ECUTWFC", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.ecutwfc = int(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ECUTRHO", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.ecutrho = int(fileRowArr[1])
-      ####
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$KPOINTS", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.kpoints = str(fileRowArr[1])+" "+str(fileRowArr[2])+" "
-        self.kpoints = self.kpoints + str(fileRowArr[3])+" "+str(fileRowArr[4])+" "
-        self.kpoints = self.kpoints + str(fileRowArr[5])+" "+str(fileRowArr[6])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$STARTKPOINTS", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.kPointStart = int(fileRowArr[1])
-      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ENDKPOINTS", True)
-      if(keywordResult is not None):
-        fileRowArr = keywordResult.split(" ")
-        self.kPointEnd = int(fileRowArr[1])
-
 
       # Convergence Settings
       #######################
@@ -246,7 +169,23 @@ class bpCalc:
         fileRowArr = keywordResult.split(" ")
         self.testeps = int(fileRowArr[1])
 
-
+      # Atoms per cell
+      #######################
+      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ATOMSPERCELL", True)
+      if(keywordResult is not None):
+        fileRowArr = keywordResult.split(" ")
+        self.atomsPerCell = int(fileRowArr[1])
+      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$STRUCTURE", True)
+      if(keywordResult is not None):
+        fileRowArr = keywordResult.split(" ")
+        cellStructure = fileRowArr[1]
+        if(self.atomsPerCell is None):
+          if(cellStructure.upper() == "BCC"):
+            self.atomsPerCell = 2
+          if(cellStructure.upper() == "FCC"):
+            self.atomsPerCell = 4
+          if(cellStructure.upper() == "ZB"):
+            self.atomsPerCell = 8
 
 
 
@@ -274,10 +213,16 @@ class bpCalc:
     self.resultsArr.append("Run Options     ")
     self.resultsArr.append("==========================================")
     self.resultsArr.append("Dir:       "+self.tmpDir)
-    self.resultsArr.append("Code:      "+str(self.runCode)+"  ("+str(self.runType)+")")
-    self.resultsArr.append("Structure: "+str(self.structure))
+    if(self.runType is not None and self.runCode is not None):
+      self.resultsArr.append("Code:      "+str(self.runCode)+"  ("+str(self.runType)+")")
+    if(self.structure is not None):
+      self.resultsArr.append("Structure: "+str(self.structure))
     self.resultsArr.append("  ")
 
+    # Set proc count variable
+    if(self.procCount is not None):
+      setProcs = "export procCount="+str(int(self.procCount))
+      os.system(setProcs)
 
   @staticmethod
   def checkKeyword(lineIn, keyword, verbose=False):
@@ -307,46 +252,22 @@ class bpCalc:
     self.makeStructure()
     self.relaxed()
     self.isolatedAtom()
-    #self.unperturbed()
-    #self.bulkModulus()
-    #self.cubicElasticConstants()
-    #self.outputResults()
+    self.unperturbed()
+    self.bulkModulus()
+    self.cubicElasticConstants()
+    self.endTime = time.time()
+    self.outputResults()
 
   def makeStructure(self):       # Use vc-relax to fine optimum settings
     print ("1. Make atom structure")
-    self.pwIn = pwIn()
-    if(self.pwtemplate is None):
-      # Make structure
-      print ("   build structure")
-      self.primitive = structures.primitiveStructure(self.structure,self.atomList)
-      self.expanded = structures.buildStructure(self.primitive,self.copies)
-      # Make template file
-      self.pwIn.makeTemplate()
-      self.pwIn.changeAlat(self.copies * self.inputAlat, True)
-      self.pwIn.changeAtoms(self.expanded)
-      self.pwIn.changeAtomSpecies(self.atomList,self.massList,self.ppList)
-      self.pwIn.changePrefix("template")
-      if(self.nspin==0):
-        self.pwIn.setMagnetic0()
-      if(self.nspin==2):
-        self.pwIn.setMagnetic2()
-      if(self.mixing_mode=="TF"):
-        self.pwIn.setMixingTF()
-      if(self.mixing_mode=="local-TF"):
-        self.pwIn.setMixingLocalTF()
-    else:
-      # Load all from a template file
-      print ("   load from file")
-      self.pwIn.loadFile(self.pwtemplate)
-    # Change values (regardless of template file or built)
-    self.pwIn.changeEcutwfc(self.ecutwfc)
-    self.pwIn.changeEcutrho(self.ecutrho)
-    self.pwIn.changeKpoints(self.kpoints)
-    self.pwIn.changeOutdir(self.outdir)
-    self.pwIn.changePPdir(self.ppdir)
+    self.prepPwIn = prepPwIn(self.cFileName)
+    self.prepPwIn.make()
+    self.pwIn = self.prepPwIn.getPW()
     self.pwIn.outputFile(self.tmpDir+"/template.in")
-
-    #structures.printStructure(self.expanded)
+    self.pwIn.extractData()
+    self.nat = self.pwIn.getNAT()
+    self.ecutwfc = self.pwIn.getEcutwfc()
+    self.ecutrho = self.pwIn.getEcutrho()
 
   def relaxed(self):       # Use vc-relax to fine optimum settings
     print ("2. Relaxed aLat")
@@ -367,12 +288,15 @@ class bpCalc:
 
   def isolatedAtom(self):       # Use vc-relax to fine optimum settings
     print ("3. Isolated Atom")
+    pwTemplate = pwIn()
+    pwTemplate.loadFile(self.tmpDir+"/template.in")
+
     atomLabels = []
     atomMasses = []
     atomPPs = []
-    atomLabels.append("AL")
-    atomMasses.append("26.982")
-    atomPPs.append("Al.pbe-nl-kjpaw_psl.1.0.0.UPF")
+    atomLabels.append(str(pwTemplate.getAtomLabel(1)))
+    atomMasses.append(str(pwTemplate.getAtomMass(1)))
+    atomPPs.append(str(pwTemplate.getAtomPP(1)))
 
     # Load relaxed file
     pwRelaxed = pwOut(self.tmpDir+"/vc-relax.out")
@@ -381,11 +305,13 @@ class bpCalc:
     primitive = structures.primitiveStructure("ISO",atomLabels)
     pwIn_iso = pwIn()
     pwIn_iso.makeIsolated()
+    pwIn_iso.changeOutdir(pwTemplate.getOutdir())
+    pwIn_iso.changePPdir(pwTemplate.getPPdir())
     pwIn_iso.changeAlat(aLat)
-    pwIn_iso.changeOutdir(self.outdir)
-    pwIn_iso.changePPdir(self.ppdir)
     pwIn_iso.changeAtomSpecies(atomLabels,atomMasses,atomPPs)
     pwIn_iso.changeAtoms(primitive)
+    pwIn_iso.changeEcutwfc(self.ecutwfc)
+    pwIn_iso.changeEcutrho(self.ecutrho)
     pwIn_iso.outputFile(self.tmpDir+"/isolated.in")
     runPw.run("isolated",self.tmpDir,self.runCode,0,True)
     pwOut_iso = pwOut(self.tmpDir+"/isolated.out")
@@ -536,6 +462,10 @@ class bpCalc:
 
 
   def outputResults(self):
+    aLat = None
+    if(self.atomsPerCell is not None):
+      volPerCell = self.eos.eosO.V0 * (self.atomsPerCell/self.nat)
+      aLat = math.pow(volPerCell,1/3)
     outputText =              "===================================================\n"
     outputText = outputText + "Results\n"
     outputText = outputText + "===================================================\n"
@@ -548,9 +478,15 @@ class bpCalc:
     outputText = outputText + "B0P: " + str(self.eos.eosO.B0P)+"\n"
     outputText = outputText + "E0: " + str(self.eos.eosO.E0)+"\n"
     outputText = outputText + "V0: " + str(self.eos.eosO.V0)+"\n"
+    if(aLat is not None):
+      outputText = outputText + "aLat: " + str(aLat)+"\n"
     outputText = outputText + "C11 (GPA): " + str(self.c11_GPa)+"\n"
     outputText = outputText + "C12 (GPA): " + str(self.c12_GPa)+"\n"
     outputText = outputText + "C44 (GPA): " + str(self.c44_GPa)+"\n"
+    outputText = outputText + " \n"
+    outputText = outputText + "Time: " + str(self.endTime - self.startTime)+"\n"
+
+
 
     print()
     print(outputText)

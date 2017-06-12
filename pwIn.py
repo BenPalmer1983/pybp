@@ -99,6 +99,19 @@ class pwIn:
     return nAtoms
 
 
+  def getNType(self):
+    ntype = 0
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      testStrU = testStr.upper()
+      # Update data file
+      if 'NTYP' in self.pwFile.fileData[i].upper():
+        fileRow = self.pwFile.fileData[i].replace(",", "")
+        fileRowArr = fileRow.split("=")
+        ntype = int(fileRowArr[1])
+    return ntype
+
+
   def getAlat(self):
     aLat = 0.0
     for i in range(0,self.pwFile.lineCount):
@@ -111,6 +124,87 @@ class pwIn:
         fileRowArr = testStr.split("=")
         aLat = float(fileRowArr[1])
     return aLat
+
+
+  def getAtomLabel(self, atomID):
+    nType = self.getNType()
+    atomID = atomID % nType
+    for i in range(0,self.pwFile.lineCount):
+      if 'ATOMIC_SPECIES' in self.pwFile.fileData[i].upper():
+        for j in range(0, nType):
+          i = i + 1
+          fileRow = oStrings.removeDouble(self.pwFile.fileData[i]," ")
+          fileRowArr = fileRow.split(" ")
+          if(j==atomID):
+            return fileRowArr[0]
+        break
+
+  def getAtomMass(self, atomID):
+    nType = self.getNType()
+    atomID = atomID % nType
+    for i in range(0,self.pwFile.lineCount):
+      if 'ATOMIC_SPECIES' in self.pwFile.fileData[i].upper():
+        for j in range(0, nType):
+          i = i + 1
+          fileRow = oStrings.removeDouble(self.pwFile.fileData[i]," ")
+          fileRowArr = fileRow.split(" ")
+          if(j==atomID):
+            return fileRowArr[1]
+        break
+
+  def getAtomPP(self, atomID):
+    nType = self.getNType()
+    atomID = atomID % nType
+    for i in range(0,self.pwFile.lineCount):
+      if 'ATOMIC_SPECIES' in self.pwFile.fileData[i].upper():
+        for j in range(0, nType):
+          i = i + 1
+          fileRow = oStrings.removeDouble(self.pwFile.fileData[i]," ")
+          fileRowArr = fileRow.split(" ")
+          if(j==atomID):
+            return fileRowArr[2]
+        break
+
+  def getOutdir(self):
+    result = ""
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      if(self.checkString(testStr, "OUTDIR=")):
+        fileRowArr = testStr.split("\"")
+        result = str(fileRowArr[1])
+    return result
+
+
+  def getPPdir(self):
+    result = ""
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      if(self.checkString(testStr, "PSEUDO_DIR=")):
+        fileRowArr = testStr.split("\"")
+        result = str(fileRowArr[1])
+    return result
+
+
+  def getEcutwfc(self):
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      if(self.checkString(testStr, "ECUTWFC=")):
+        fileRowArr = testStr.split(",")
+        testStr = fileRowArr[0]
+        fileRowArr = testStr.split("=")
+        ecutwfc = int(fileRowArr[1])
+    return ecutwfc
+
+
+  def getEcutrho(self):
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      if(self.checkString(testStr, "ECUTRHO=")):
+        fileRowArr = testStr.split(",")
+        testStr = fileRowArr[0]
+        fileRowArr = testStr.split("=")
+        ecutrho = float(fileRowArr[1])
+    return ecutrho
 
 
   def changeCalculation(self, calculation):
@@ -130,16 +224,22 @@ class pwIn:
         self.pwFile.fileData[i] = 'pseudo_dir = "'+dirIn+'",'
 
   def changeEcutwfc(self, ecutwfc):
+    if(not self.checkInput(ecutwfc)):
+      return
     for i in range(0,self.pwFile.lineCount):
       if 'ECUTWFC' in self.pwFile.fileData[i].upper():
         self.pwFile.fileData[i] = 'ecutwfc = '+str(ecutwfc)+','
 
   def changeEcutrho(self, ecutrho):
+    if(not self.checkInput(ecutrho)):
+      return
     for i in range(0,self.pwFile.lineCount):
       if 'ECUTRHO' in self.pwFile.fileData[i].upper():
         self.pwFile.fileData[i] = 'ecutrho = '+str(ecutrho)+','
 
   def changeDegauss(self, degauss):
+    if(not self.checkInput(degauss)):
+      return
     for i in range(0,self.pwFile.lineCount):
       if 'DEGAUSS' in self.pwFile.fileData[i].upper():
         self.pwFile.fileData[i] = 'degauss = '+str(degauss)+','
@@ -173,7 +273,13 @@ class pwIn:
     # Extract data
     self.extractData()
 
-  #def changeAtomSpecies(self, atomLabels, atomMasses, atomPPs):
+  def changeCell(self, xx, xy, xz, yx, yy, yz, zx, zy, zz):
+    for i in range(0,self.pwFile.lineCount):
+      if 'CELL_PARAMETERS ALAT' in self.pwFile.fileData[i].upper():
+        self.pwFile.fileData[i+1] = str(float(xx)) + "  " + str(float(xy)) + "  " + str(float(xz))
+        self.pwFile.fileData[i+2] = str(float(yx)) + "  " + str(float(yy)) + "  " + str(float(yz))
+        self.pwFile.fileData[i+3] = str(float(zx)) + "  " + str(float(zy)) + "  " + str(float(zz))
+        break
 
   def changeKpoints(self, kpoints):
     # Check input
@@ -273,6 +379,79 @@ class pwIn:
     #  print (row)
     self.extractData()
 
+
+  def increaseSize(self, copyX, copyY=None, copyZ=None):
+    label = []
+    x = []
+    y = []
+    z = []
+    fileTemp = []
+    fileBottom = []
+    if(copyY==None):
+      copyY = copyX
+    if(copyZ==None):
+      copyZ = copyX
+    nat = self.getNAT()
+    aLat = self.getAlat()
+    nat_New = 0
+    aLat_New = aLat * copyX
+    j = 0
+    rowCounter = 0
+    for i in range(0,self.pwFile.lineCount):
+      if(j==0):
+        fileTemp.append(self.pwFile.fileData[i])
+        rowCounter = rowCounter + 1
+      if(j>nat):
+        fileTemp.append(self.pwFile.fileData[i])
+        rowCounter = rowCounter + 1
+      if(j>0 and j<=nat):
+        fileRow = oStrings.removeDouble(self.pwFile.fileData[i]," ")
+        fileRowArr = fileRow.split(" ")
+        label.append(fileRowArr[0])
+        x.append(float(fileRowArr[1]))
+        y.append(float(fileRowArr[2]))
+        z.append(float(fileRowArr[3]))
+        j = j + 1
+      if(j==(nat+1)):
+        j = j + 1
+        # Make structure
+        for xx in range(0,copyX):
+          for yy in range(0,copyY):
+            for zz in range(0,copyZ):
+              for n in range(0,nat):
+                nat_New = nat_New + 1
+                label_ext = str(label[n])
+                x_ext = str((xx + x[n]) / copyX)
+                y_ext = str((yy + y[n]) / copyY)
+                z_ext = str((zz + z[n]) / copyZ)
+                row = label_ext + " " + x_ext + " " + y_ext + " " + z_ext
+                rowCounter = rowCounter + 1
+                fileTemp.append(row)
+      if(self.checkString(self.pwFile.fileData[i], "ATOMIC_POSITIONS")):
+        j = j + 1
+    self.pwFile.fileData = fileTemp
+    self.pwFile.lineCount = rowCounter
+    self.changeNat(nat_New)
+    self.changeAlat(float(aLat_New))
+
+  def removeSmearing(self):
+    tempList = []
+    j = 0
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+      saveLine = True
+      if(self.checkString(testStr, "OCCUPATIONS=")):
+        saveLine = False
+      if(self.checkString(testStr, "SMEARING=")):
+        saveLine = False
+      if(self.checkString(testStr, "DEGAUSS=")):
+        saveLine = False
+      if(saveLine):
+        tempList.append(self.pwFile.fileData[i])
+        j = j + 1
+    self.pwFile.lineCount = j
+
+
   def setMixingTF(self):
     rowCounter = 0
     for i in range(0,self.pwFile.lineCount):
@@ -335,6 +514,9 @@ class pwIn:
     primitive = structures.primitiveStructure(structure,self.atomSpecies_symbol)
     expanded = structures.buildStructure(primitive, copyX, copyY, copyZ, perturb)
     self.changeAtoms(expanded)
+
+  def addComment(self,comment):
+    self.insertLine(0,"!"+str(comment))
 
   def insertLine(self,fileRow,line):
     # Append extra line
@@ -490,6 +672,11 @@ class pwIn:
             newRow = newRow + str(x) + " " + str(y) + " " + str(z)
             self.pwFile.fileData[i] = newRow
 
+
+#  def remakeIsolated(self):
+
+
+
   ###############################################
   # Specific templates
   ###############################################
@@ -535,9 +722,9 @@ class pwIn:
     # Electrons
     tempFile.fileData.append("&ELECTRONS")
     tempFile.fileData.append("mixing_beta = 3.0000000E-01,")
-    tempFile.fileData.append("mixing_ndim = 10,")
+    tempFile.fileData.append("mixing_ndim = 12,")
     tempFile.fileData.append("diagonalization='david',")
-    tempFile.fileData.append("mixing_mode = 'TF',")
+    tempFile.fileData.append("mixing_mode = 'local-TF',")
     tempFile.fileData.append("conv_thr = 1.0D-6,")
     tempFile.fileData.append("/")
     tempFile.fileData.append("")
@@ -674,6 +861,32 @@ class pwIn:
     # Store file and extract data
     self.pwFile = tempFile              # make new oFileData object
     self.extractData()
+
+
+  # Static methods
+
+  @staticmethod
+  def checkInput(inputIn):
+    inputResult = True
+    if(inputIn is None):
+      inputResult = False
+    if(inputIn == ""):
+      inputResult = False
+    return inputResult
+
+  @staticmethod
+  def checkString(inputIn, check):
+    isString = False
+    inputIn_New = ""
+    for char in inputIn:
+      if(char != " "):
+        inputIn_New = inputIn_New + char
+    inputIn_New = inputIn_New.upper()
+    check = check.upper()
+    if (check in inputIn_New):
+      isString = True
+    return isString
+
 
 
 ################################################################################

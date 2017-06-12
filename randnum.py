@@ -193,10 +193,6 @@ class RandDist:
       interpPoints[2][1] = yB
       # Interp
       fx = self.interp(x,interpPoints)
-
-      # Calculate 3 point interp
-      #fx = 0.5 * (yA + yB)
-      #print(yMax, randC, y, fx)
       if(y<=fx):
         loopTrials = False
       randNumber = x

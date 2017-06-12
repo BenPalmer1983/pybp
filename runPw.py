@@ -16,7 +16,7 @@ class runPw:
       inFile = dftDir+"/"+fileName+".in"
       outFile = dftDir+"/"+fileName+".out"
 
-    if(procs==0):
+    if(procs==0 or procs is None):
       try:
         procs = os.environ['procCount']
       except:

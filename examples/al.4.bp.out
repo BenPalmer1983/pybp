@@ -1,0 +1,94 @@
+Reading control file
+==================================================
+$tmpdir al4
+$structure FCC 
+$converge 3 
+$run 2 
+$bmstrain 0.05 
+$orstrain 0.02 
+$testrain 0.04 
+$bmsteps 10
+$orsteps 10
+$testeps 10
+==================================================
+
+[]
+Run
+1. Make atom structure
+name al.4.bp.in
+$nspin 0 
+$mixing_mode TF 
+6
+2. Relaxed aLat
+3. Isolated Atom
+1 mpirun -np 4 pw.x < al4/isolated.in > al4/isolated.out
+4. Unperturbed
+     Input file:  al4/opt.in
+1 mpirun -np 4 pw.x < al4/unperturbed.in > al4/unperturbed.out
+     Energy per atom:  -39.5015509975
+     Volume per atom:  110.6325
+5. Bulk Modulus
+1 mpirun -np 4 pw.x < al4/bm_0.in > al4/bm_0.out
+1 mpirun -np 4 pw.x < al4/bm_1.in > al4/bm_1.out
+1 mpirun -np 4 pw.x < al4/bm_2.in > al4/bm_2.out
+1 mpirun -np 4 pw.x < al4/bm_3.in > al4/bm_3.out
+1 mpirun -np 4 pw.x < al4/bm_4.in > al4/bm_4.out
+1 mpirun -np 4 pw.x < al4/bm_5.in > al4/bm_5.out
+1 mpirun -np 4 pw.x < al4/bm_6.in > al4/bm_6.out
+1 mpirun -np 4 pw.x < al4/bm_7.in > al4/bm_7.out
+1 mpirun -np 4 pw.x < al4/bm_8.in > al4/bm_8.out
+1 mpirun -np 4 pw.x < al4/bm_9.in > al4/bm_9.out
+1 mpirun -np 4 pw.x < al4/bm_11.in > al4/bm_11.out
+1 mpirun -np 4 pw.x < al4/bm_12.in > al4/bm_12.out
+1 mpirun -np 4 pw.x < al4/bm_13.in > al4/bm_13.out
+1 mpirun -np 4 pw.x < al4/bm_14.in > al4/bm_14.out
+1 mpirun -np 4 pw.x < al4/bm_15.in > al4/bm_15.out
+1 mpirun -np 4 pw.x < al4/bm_16.in > al4/bm_16.out
+1 mpirun -np 4 pw.x < al4/bm_17.in > al4/bm_17.out
+1 mpirun -np 4 pw.x < al4/bm_18.in > al4/bm_18.out
+1 mpirun -np 4 pw.x < al4/bm_19.in > al4/bm_19.out
+1 mpirun -np 4 pw.x < al4/bm_20.in > al4/bm_20.out
+6. Cubic Elastic Constants
+6a. Cubic Elastic Constants - Orthorhombic
+1 mpirun -np 4 pw.x < al4/ortho_1.in > al4/ortho_1.out
+1 mpirun -np 4 pw.x < al4/ortho_2.in > al4/ortho_2.out
+1 mpirun -np 4 pw.x < al4/ortho_3.in > al4/ortho_3.out
+1 mpirun -np 4 pw.x < al4/ortho_4.in > al4/ortho_4.out
+1 mpirun -np 4 pw.x < al4/ortho_5.in > al4/ortho_5.out
+1 mpirun -np 4 pw.x < al4/ortho_6.in > al4/ortho_6.out
+1 mpirun -np 4 pw.x < al4/ortho_7.in > al4/ortho_7.out
+1 mpirun -np 4 pw.x < al4/ortho_8.in > al4/ortho_8.out
+1 mpirun -np 4 pw.x < al4/ortho_9.in > al4/ortho_9.out
+1 mpirun -np 4 pw.x < al4/ortho_10.in > al4/ortho_10.out
+-0.170973921861 -22.7339333155
+6a. Cubic Elastic Constants - Tetragonal
+1 mpirun -np 4 pw.x < al4/tetra_1.in > al4/tetra_1.out
+1 mpirun -np 4 pw.x < al4/tetra_2.in > al4/tetra_2.out
+1 mpirun -np 4 pw.x < al4/tetra_3.in > al4/tetra_3.out
+1 mpirun -np 4 pw.x < al4/tetra_4.in > al4/tetra_4.out
+1 mpirun -np 4 pw.x < al4/tetra_5.in > al4/tetra_5.out
+1 mpirun -np 4 pw.x < al4/tetra_6.in > al4/tetra_6.out
+1 mpirun -np 4 pw.x < al4/tetra_7.in > al4/tetra_7.out
+1 mpirun -np 4 pw.x < al4/tetra_8.in > al4/tetra_8.out
+1 mpirun -np 4 pw.x < al4/tetra_9.in > al4/tetra_9.out
+1 mpirun -np 4 pw.x < al4/tetra_10.in > al4/tetra_10.out
+
+===================================================
+Results
+===================================================
+ 
+Unperturbed energy (Ry): -39.5015509975
+Isolated energy (Ry): -39.34334233
+Cohesive energy (Ry): -0.1582086674999985  (ev): -2.15163787799998
+ 
+B0: 0.00545202449754  B0 (GPA): 80.0585402118
+B0P: 3.386325833700212
+E0: -39.5935610039
+V0: 113.0037833
+aLat: 4.834642081361667
+C11 (GPA): 65.0460508274
+C12 (GPA): 87.7799841429
+C44 (GPA): -0.725082223784
+ 
+Time: 1554.7907557487488
+

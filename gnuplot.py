@@ -16,6 +16,7 @@ class gnuplot:
     self.reset()
 
   def reset(self):
+    self.lastPlotID = None
     self.constructed = 1
     self.plotName = "plot"
     self.dir = None
@@ -32,6 +33,7 @@ class gnuplot:
     self.dataAxes = [0 for y in range(100)]
     self.dataName = [0 for y in range(100)]
     self.dataCircles = [0 for y in range(100)]
+    self.plotType = [0 for y in range(100)]
     self.maxRows = 0
     for x in range(0,1000):
       for y in range(0,100):
@@ -46,6 +48,8 @@ class gnuplot:
       self.dataName[y] = " "
     for y in range(0,100):
       self.dataCircles[y] = None
+    for y in range(0,100):
+      self.plotType[y] = "linespoints"
     # output file header
     self.plot = "#################################################################################\n"
     self.plot = self.plot + "# Gnuplot\n"
@@ -111,6 +115,14 @@ class gnuplot:
     self.dataPointCount[yCol] = row
     # Increment data set counter
     self.dataSets = self.dataSets + 1
+    # Last added
+    self.lastPlotID = self.dataSets - 1
+
+  def getLastPlotID(self):
+    return self.lastPlotID
+
+  def setPlotType(self, plotID, plotType):
+    self.plotType[plotID] = plotType
 
   def makePlot(self):
     ##
@@ -207,6 +219,7 @@ class gnuplot:
         self.plot = self.plot + circles+"\n"
     self.plot = self.plot + "# Plot \n"
     self.plot = self.plot + "plot \\\n"
+    y = 0
     for dataSet in range(0,self.dataSets):
       col = 2 * dataSet
       self.plot = self.plot + "'"+self.dataFileName_R+"' "
@@ -215,8 +228,9 @@ class gnuplot:
       self.plot = self.plot + ":"
       self.plot = self.plot + "("+str(self.dataPointMultiplier[col+1])+" * $"+str(col+2)+") "
       self.plot = self.plot + " title '"+self.dataName[col]+"' "
-      self.plot = self.plot + " with linespoints axes "
+      self.plot = self.plot + " with "+str(self.plotType[y])+" axes "
       self.plot = self.plot + self.dataAxes[col]
+      y = y + 1
       if(dataSet<self.dataSets-1):
         self.plot = self.plot + ", \\\n"
 

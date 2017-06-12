@@ -69,6 +69,14 @@ class oStrings:
     return outputStr
 
   @staticmethod
+  def removeSpaces(inputStr):
+    outputStr = ""
+    for char in inputStr:
+      if(char != " "):
+        outputStr = outputStr+char
+    return outputStr
+
+  @staticmethod
   def trimEnds(inputStr):
     outputStr = ""
     start = 0

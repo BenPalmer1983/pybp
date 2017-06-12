@@ -1,0 +1,57 @@
+########################
+# BP input file
+#
+########################
+
+## Directories
+
+$tmpdir c8
+$ppdir env     # if env use environment variable $PWPP
+$outdir env    # if env use environment variable $PWSCRATCH
+
+
+## PWscf settings
+
+## Use template file
+#$pwtemplate c.8.template.in
+#$ATOMSPERCELL 8
+
+## Build template (if $pwtemplate is commented out)
+$atomlist C
+$masslist 12.0
+$pplist C.pbe-n-kjpaw_psl.1.0.0.UPF
+$structure ZB        # Structure (FCC, BCC)
+$alat 7.63           # Starting aLat
+$nspin 0             # 0, 2
+$mixing_mode TF      # TF, local-TF
+$heat 0.0            # Maximum perturbation in Bohr
+$degauss 0.02        # ecut degauss
+$ecutwfc 35          # 
+$ecutrho 200         #
+$kpoints  4 4 4  1 1 1       # ecut k-points
+
+## Applies to load from file and build template
+$cell      1.0 0.0 0.0    0.0 1.0 0.0    0.0 0.0 1.0
+$copies 1            # 1 x 1 x 1
+$nosmear             # turn smearing off (if uncommented)
+
+
+## Run Settings
+
+$converge    3     # 1 ecut, 2 kpoints, 3 ecut + kpoints
+$run 2             # 0 no run, 1, full run, 2 run uncompleted dft files
+
+
+## BP Calculation Settings
+
+$bmstrain 0.05  # Maximum strain
+$orstrain 0.02  # Maximum strain
+$testrain 0.04  # Maximum strain
+$bmsteps 10
+$orsteps 10
+$testeps 10
+
+
+
+
+
