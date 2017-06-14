@@ -57,7 +57,7 @@ class prepPwIn:
     self.nspin = None
     self.mixing_mode = None
     self.heat = None
-
+    self.magstructure = "FM"
 
   def make(self):
     self.pwIn = pwIn()
@@ -103,6 +103,7 @@ class prepPwIn:
     if(self.nosmear):
       self.pwIn.removeSmearing()
     # Magnetism
+    self.pwIn.setMagStructure(self.magstructure)
     if(self.nspin==0):
       self.pwIn.setMagnetic0()
     if(self.nspin==2):
@@ -189,6 +190,10 @@ class prepPwIn:
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")
         self.structure = fileRowArr[1]
+      keywordResult = self.checkKeyword(self.cFile.fileData[i], "$MAGSTRUCTURE", False)
+      if(keywordResult is not None):
+        fileRowArr = keywordResult.split(" ")
+        self.magstructure = fileRowArr[1]
       keywordResult = self.checkKeyword(self.cFile.fileData[i], "$ALAT", False)
       if(keywordResult is not None):
         fileRowArr = keywordResult.split(" ")

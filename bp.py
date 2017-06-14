@@ -285,6 +285,7 @@ class bpCalc:
     self.pwIn.normaliseParameters()           # normalise cell/aLat
     self.pwIn.changeCalculation("scf")
     self.replaceInput(self.tmpDir+"/opt.in")
+    self.pwRelaxed.printCell_RelaxedNormalised()
 
   def isolatedAtom(self):       # Use vc-relax to fine optimum settings
     print ("3. Isolated Atom")
@@ -315,7 +316,8 @@ class bpCalc:
     pwIn_iso.outputFile(self.tmpDir+"/isolated.in")
     runPw.run("isolated",self.tmpDir,self.runCode,0,True)
     pwOut_iso = pwOut(self.tmpDir+"/isolated.out")
-    self.isolated_energy = pwOut_iso.getEnergyPerAtom()
+    if(pwOut_iso.OK):
+      self.isolated_energy = pwOut_iso.getEnergyPerAtom()
 
   def unperturbed(self):       # Use vc-relax to fine optimum settings
     print ("4. Unperturbed")
@@ -343,6 +345,11 @@ class bpCalc:
     iMatrix = strains.identityMatrix()
     # file name stub
     stub = "bm"
+    # Fail count
+    failCount = 0
+    # Non-convergence count
+    noConvCount = 0
+
     # Loop through and make input files
     for i in range (0,2*self.bmsteps+1):
     # Transform
@@ -352,46 +359,73 @@ class bpCalc:
       if((i-self.bmsteps)==0):
         bmVol.append(self.unperturbed_volume)
         bmEnergy.append(self.unperturbed_energy)
+        print(i, self.unperturbed_volume, self.unperturbed_energy)
       else:
         pwIn_bm.outputFile(self.tmpDir+"/"+stub+"_"+str(i)+".in")
-        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,True)
+        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,False)
         pwOut_bm = pwOut(self.tmpDir+"/"+stub+"_"+str(i)+".out")
-        bmVol.append(pwOut_bm.getVolPerAtom())
-        bmEnergy.append(pwOut_bm.getEnergyPerAtom())
-    self.eos = eos()
-    self.eos.loadData(bmVol, bmEnergy)
-    self.eos.fitEoS()
-    #self.eos.display()
+        if(pwOut_bm.OK):
+          bmVol.append(pwOut_bm.getVolPerAtom())
+          bmEnergy.append(pwOut_bm.getEnergyPerAtom())
+          print(i, pwOut_bm.getVolPerAtom(), pwOut_bm.getEnergyPerAtom())
+        else:
+          if(pwOut_bm.checkSuccessful() == False):
+            failCount = failCount + 1
+          if(pwOut_bm.checkConverge() == False):
+            noConvCount = noConvCount + 1
+      if(failCount==2 or noConvCount==2):
+        break
 
-    gp = gnuplot()
-    gp.reset()
-    gp.setDir(self.tmpDir+"/plots")
-    gp.title("Equation of State")
-    gp.axisLabel("x1","Volume/Atom (Bohr^3)")
-    gp.axisLabel("y1","Energy/Atom (Ry)")
-    gp.outputPlot("eos")
-    gp.addPlot(bmVol,bmEnergy,"x1y1","EoS",1,1)
-    gp.makePlot()
+    if(len(bmVol)>0 and len(bmEnergy)>0):
+      self.eos = eos()
+      self.eos.loadData(bmVol, bmEnergy)
+      self.eos.fitEoS()
+      self.eos.display()
+
+      gp = gnuplot()
+      gp.reset()
+      gp.setDir(self.tmpDir+"/plots")
+      gp.title("Equation of State")
+      gp.axisLabel("x1","Volume/Atom (Bohr^3)")
+      gp.axisLabel("y1","Energy/Atom (Ry)")
+      gp.outputPlot("eos")
+      gp.addPlot(bmVol,bmEnergy,"x1y1","EoS",1,1)
+      gp.makePlot()
 
 
 
   def cubicElasticConstants(self):
     print("6. Cubic Elastic Constants")
+    self.ortho = None
+    self.tetra = None
+    self.c11 = None
+    self.c12 = None
+    self.c44 = None
+    self.c11_GPa = None
+    self.c12_GPa = None
+    self.c44_GPa = None
     self.cubicElasticConstants_Orthorhombic()
     self.cubicElasticConstants_Tetragonal()
-    self.c12 = self.eos.eosO.B0 - self.ortho / 3
-    self.c11 = self.ortho + self.c12
-    self.c44 = self.tetra
-
-    self.c11_GPa = self.c11 * 1.47105e4
-    self.c12_GPa = self.c12 * 1.47105e4
-    self.c44_GPa = self.c44 * 1.47105e4
+    if(self.ortho is not None and self.tetra is not None):
+      # Calculate cubic elastic constants
+      self.c12 = self.eos.eosO.B0 - self.ortho / 3
+      self.c11 = self.ortho + self.c12
+      self.c44 = self.tetra
+      # Calculate GPa
+      self.c11_GPa = self.c11 * 1.47105e4
+      self.c12_GPa = self.c12 * 1.47105e4
+      self.c44_GPa = self.c44 * 1.47105e4
 
   def cubicElasticConstants_Orthorhombic(self):
     print("6a. Cubic Elastic Constants - Orthorhombic")
     energy = []
     strain = []
     stub = "ortho"
+    # Fail count
+    failCount = 0
+    # Non-convergence count
+    noConvCount = 0
+    # Loop
     for i in range (0,self.orsteps+1):
     # Load opt file
       pwIn_ec = pwIn(self.tmpDir+"/opt.in")
@@ -403,32 +437,48 @@ class bpCalc:
       if(i==0):
         energy.append(self.unperturbed_energy)
         strain.append(0.0)
+        print(i, orthoStrain, self.unperturbed_energy)
       else:
         strain.append(orthoStrain)
         pwIn_ec.outputFile(self.tmpDir+"/"+stub+"_"+str(i)+".in")
-        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,True)
+        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,False)
         pwOut_ec = pwOut(self.tmpDir+"/"+stub+"_"+str(i)+".out")
-        energy.append(pwOut_ec.getEnergyPerAtom())
-    pFit = numpy.polyfit(strain, energy, 2)
-    self.ortho = pFit[0] / self.unperturbed_volume
-    self.ortho_GPa = self.ortho * 1.47105e4
-    print(pFit[0],self.ortho_GPa)
+        if(pwOut_ec.OK):
+          energy.append(pwOut_ec.getEnergyPerAtom())
+          print(i, orthoStrain, pwOut_ec.getEnergyPerAtom())
+        else:
+          if(pwOut_ec.checkSuccessful() == False):
+            failCount = failCount + 1
+          if(pwOut_ec.checkConverge() == False):
+            noConvCount = noConvCount + 1
+      if(failCount==2 or noConvCount==2):
+        break
 
-    gp = gnuplot()
-    gp.reset()
-    gp.setDir(self.tmpDir+"/plots")
-    gp.title("Orthogonal Strain")
-    gp.axisLabel("x1","Strain")
-    gp.axisLabel("y1","Energy/Atom (Ry)")
-    gp.outputPlot("ortho")
-    gp.addPlot(strain,energy,"x1y1","EoS",1,1)
-    gp.makePlot()
+
+    if(len(strain)>1 and len(energy)>1):
+      pFit = numpy.polyfit(strain, energy, 2)
+      self.ortho = pFit[0] / self.unperturbed_volume
+      self.ortho_GPa = self.ortho * 1.47105e4
+      print(pFit[0],self.ortho_GPa)
+      gp = gnuplot()
+      gp.reset()
+      gp.setDir(self.tmpDir+"/plots")
+      gp.title("Orthogonal Strain")
+      gp.axisLabel("x1","Strain")
+      gp.axisLabel("y1","Energy/Atom (Ry)")
+      gp.outputPlot("ortho")
+      gp.addPlot(strain,energy,"x1y1","EoS",1,1)
+      gp.makePlot()
 
   def cubicElasticConstants_Tetragonal(self):
     print("6a. Cubic Elastic Constants - Tetragonal")
     energy = []
     strain = []
     stub = "tetra"
+    # Fail count
+    failCount = 0
+    # Non-convergence count
+    noConvCount = 0
     for i in range (0,self.orsteps+1):
     # Load opt file
       pwIn_ec = pwIn(self.tmpDir+"/opt.in")
@@ -440,25 +490,37 @@ class bpCalc:
       if(i==0):
         energy.append(self.unperturbed_energy)
         strain.append(0.0)
+        print(i, tetraStrain, self.unperturbed_energy)
       else:
         strain.append(tetraStrain)
         pwIn_ec.outputFile(self.tmpDir+"/"+stub+"_"+str(i)+".in")
-        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,True)
+        runPw.run(stub+"_"+str(i),self.tmpDir,self.runCode,0,False)
         pwOut_ec = pwOut(self.tmpDir+"/"+stub+"_"+str(i)+".out")
-        energy.append(pwOut_ec.getEnergyPerAtom())
-    pFit = numpy.polyfit(strain, energy, 2)
-    self.tetra = (2*pFit[0]) / self.unperturbed_volume
-    self.tetra_GPa = self.tetra * 1.47105e4
+        if(pwOut_ec.OK):
+          energy.append(pwOut_ec.getEnergyPerAtom())
+          print(i, tetraStrain, pwOut_ec.getEnergyPerAtom())
+        else:
+          if(pwOut_ec.checkSuccessful() == False):
+            failCount = failCount + 1
+          if(pwOut_ec.checkConverge() == False):
+            noConvCount = noConvCount + 1
+      if(failCount==2 or noConvCount==2):
+        break
 
-    gp = gnuplot()
-    gp.reset()
-    gp.setDir(self.tmpDir+"/plots")
-    gp.title("Tetragonal Strain")
-    gp.axisLabel("x1","Strain")
-    gp.axisLabel("y1","Energy/Atom (Ry)")
-    gp.outputPlot("tetra")
-    gp.addPlot(strain,energy,"x1y1","EoS",1,1)
-    gp.makePlot()
+
+    if(len(strain)>1 and len(energy)>1):
+      pFit = numpy.polyfit(strain, energy, 2)
+      self.tetra = (2*pFit[0]) / self.unperturbed_volume
+      self.tetra_GPa = self.tetra * 1.47105e4
+      gp = gnuplot()
+      gp.reset()
+      gp.setDir(self.tmpDir+"/plots")
+      gp.title("Tetragonal Strain")
+      gp.axisLabel("x1","Strain")
+      gp.axisLabel("y1","Energy/Atom (Ry)")
+      gp.outputPlot("tetra")
+      gp.addPlot(strain,energy,"x1y1","EoS",1,1)
+      gp.makePlot()
 
 
   def outputResults(self):
@@ -480,9 +542,10 @@ class bpCalc:
     outputText = outputText + "V0: " + str(self.eos.eosO.V0)+"\n"
     if(aLat is not None):
       outputText = outputText + "aLat: " + str(aLat)+"\n"
-    outputText = outputText + "C11 (GPA): " + str(self.c11_GPa)+"\n"
-    outputText = outputText + "C12 (GPA): " + str(self.c12_GPa)+"\n"
-    outputText = outputText + "C44 (GPA): " + str(self.c44_GPa)+"\n"
+    if(self.c11_GPa is not None):
+      outputText = outputText + "C11 (GPA): " + str(self.c11_GPa)+"\n"
+      outputText = outputText + "C12 (GPA): " + str(self.c12_GPa)+"\n"
+      outputText = outputText + "C44 (GPA): " + str(self.c44_GPa)+"\n"
     outputText = outputText + " \n"
     outputText = outputText + "Time: " + str(self.endTime - self.startTime)+"\n"
 

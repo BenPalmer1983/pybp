@@ -16,6 +16,7 @@ from randnum import RandDist as RandDist
 class pwIn:
 
   def __init__(self, fileIn=None):
+    self.setDefaults()
     if(fileIn is not None):
       self.loadFile(fileIn)
 
@@ -30,6 +31,9 @@ class pwIn:
     inputVal = inputVal.split("=")
     outputVal = float(inputVal[1])
     return outputVal
+
+  def setDefaults(self):
+    self.magStructure = "FM"
 
   def extractData(self):
     self.aLat = 0.0e0
@@ -206,6 +210,8 @@ class pwIn:
         ecutrho = float(fileRowArr[1])
     return ecutrho
 
+  def setMagStructure(self, inputMag):
+    self.magStructure = inputMag.upper()
 
   def changeCalculation(self, calculation):
     for i in range(0,self.pwFile.lineCount):
@@ -288,7 +294,7 @@ class pwIn:
     kpoints = oStrings.trimEnds(kpoints)
     kpoints = kpoints
     kpointsArr = kpoints.split(" ")
-    print (len(kpointsArr))
+    #print (len(kpointsArr))
     if(len(kpointsArr)==6):
       kpoints_row = str(kpointsArr[0])+" "+str(kpointsArr[1])+" "+str(kpointsArr[2])+" "+"   1 1 1"
     if(len(kpointsArr)==3):
@@ -498,11 +504,15 @@ class pwIn:
         testStr = self.pwFile.fileData[i];
         testStr = testStr.upper()
         if ('NTYP =' in testStr or 'NTYP=' in testStr):
+          magVal = 0.3
           self.insertLine(i+1,"nspin = 2,")
           for j in range(0,len(self.atomSpecies_symbol)):
-            self.insertLine(i+j+2,"starting_magnetization("+str(j+1)+") = 0.3")
+            self.insertLine(i+j+2,"starting_magnetization("+str(j+1)+") = "+str(magVal))
+            if(self.magStructure == "AFM"):
+              magVal = -1 * magVal
           break
 
+#
   def makeStructure(self,structure,copyX=1,copyY=None,copyZ=None,perturb=None):
     if(copyY is None):
       copyY = copyX

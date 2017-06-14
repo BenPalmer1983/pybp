@@ -15,7 +15,10 @@ from bpstandard import oStrings as oStrings
 class pwOut:
 
   def __init__(self, fileName=None):
+    self.pwFile = None
     self.successful = False
+    self.converged = False
+    self.OK = False
     if(fileName is not None):
       self.loadDataFile(fileName)
 
@@ -24,7 +27,9 @@ class pwOut:
       self.pwFile = oFileData()               # make new oFileData object
       self.pwFile.loadFile(fileName)
       self.successful = self.checkSuccessful()
-      if(self.successful):
+      self.converged = self.checkConverge()
+      if(self.checkOK()):
+        self.OK = True
         self.readData()
 
   def readData(self):
@@ -43,9 +48,27 @@ class pwOut:
 
   def checkSuccessful(self):
     result = False
+    if(self.pwFile is None):
+      return result
     for i in range(0,self.pwFile.lineCount):
       if '   JOB DONE.' in self.pwFile.fileData[i]:
         result = True
+    return result
+
+  def checkConverge(self):
+    result = False
+    if(self.pwFile is None):
+      return result
+    result = True
+    for i in range(0,self.pwFile.lineCount):
+      if 'convergence NOT achieved' in self.pwFile.fileData[i]:
+        result = False
+    return result
+
+  def checkOK(self):
+    result = False
+    if(self.checkSuccessful() and self.checkConverge()):
+      result = True
     return result
 
   def getEnergy(self):
@@ -190,6 +213,20 @@ class pwOut:
           cell[2][1] = float(dataArr[4])
           cell[2][2] = float(dataArr[5])
     return cell
+
+  def printCell_RelaxedNormalised(self):
+    aLat = self.getAlat_Relaxed()
+    cell = self.getCell_Relaxed()
+
+    factor = 1.0/cell[0][0]
+    aLat = aLat * cell[0][0]
+    print("aLat:     ", aLat)
+
+    for i in range(0,3):
+      for j in range(0,3):
+        cell[i][j] = factor * cell[i][j]
+        print('{0:.4f}'.format(cell[i][j]),"  ",end="")
+      print()
 
   def getVol(self):
     vol = 0
