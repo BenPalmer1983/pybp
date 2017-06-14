@@ -354,7 +354,8 @@ class bpCalc:
     for i in range (0,2*self.bmsteps+1):
     # Transform
       strain = (i-self.bmsteps) * (self.bmstrain / self.bmsteps)
-      pwIn_bm.resetCellParameters()
+      #pwIn_bm.resetCellParameters()
+      pwIn_bm = pwIn(self.tmpDir+"/opt.in")  # Load from opt file
       pwIn_bm.scale(1.00 + strain)
       if((i-self.bmsteps)==0):
         bmVol.append(self.unperturbed_volume)

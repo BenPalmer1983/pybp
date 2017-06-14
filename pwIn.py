@@ -310,7 +310,8 @@ class pwIn:
   def changeAlat(self, aLat, updateValue=False):
     for i in range(0,self.pwFile.lineCount):
       if 'celldm(1)' in self.pwFile.fileData[i]:
-        self.pwFile.fileData[i] = 'celldm(1) = '+str(aLat)+','
+        aLat_str = str('{:5f}'.format(aLat))
+        self.pwFile.fileData[i] = 'celldm(1) = '+aLat_str+','
     if updateValue == True:
       self.aLat = float(aLat)
 
@@ -322,7 +323,10 @@ class pwIn:
       if 'CELL_PARAMETERS' in testStr:
         for j in range(0,3):
           i = i + 1
-          self.pwFile.fileData[i] = str(newCell[j][0])+" "+str(newCell[j][1])+" "+str(newCell[j][2])
+          x = str('{:5f}'.format(newCell[j][0]))
+          y = str('{:5f}'.format(newCell[j][1]))
+          z = str('{:5f}'.format(newCell[j][2]))
+          self.pwFile.fileData[i] = x + "   " + y + "   " + z
       # Update cell
       self.cellParameters = newCell
 
@@ -681,6 +685,13 @@ class pwIn:
             z = z % 1
             newRow = newRow + str(x) + " " + str(y) + " " + str(z)
             self.pwFile.fileData[i] = newRow
+
+
+  def formatNumbers(self):
+    # Loop through rows
+    for i in range(0,self.pwFile.lineCount):
+      testStr = self.pwFile.fileData[i];
+
 
 
 #  def remakeIsolated(self):
